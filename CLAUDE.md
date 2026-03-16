@@ -10,26 +10,47 @@ This project is a Claude Code plugin that manages the complete Software Developm
 
 ## Directory Structure
 
+The plugin lives in `sdlc-launcher/` and follows the official Claude Code plugin spec:
+
 ```
+sdlc-launcher/                  # Plugin root
+├── .claude-plugin/
+│   └── plugin.json             # Plugin manifest (name, version, author…)
+├── commands/                   # Slash commands — namespaced as /sdlc-launcher:*
+│   ├── phase-1-planning/
+│   ├── phase-2-requirements/
+│   ├── phase-3-design/
+│   ├── phase-4-development/
+│   ├── phase-5-testing/
+│   ├── phase-6-deployment/
+│   ├── phase-7-maintenance/
+│   └── utils/
+└── agents/                     # Specialized AI agents (jira, architect, QA, etc.)
+
 .claude/
-├── commands/sdlc/          # SDLC slash commands (phases 1–7 + utils)
-├── agents/                 # Specialized AI agents (jira, architect, QA, etc.)
-├── SDLCs/                  # Generated artifacts (ideas, PRDs, epics, plans...)
-└── settings/               # Jira config and plugin settings
+├── SDLCs/                      # Generated artifacts (ideas, PRDs, epics, plans…)
+└── settings/                   # Jira config and plugin settings
+```
+
+**Load the plugin locally:**
+```bash
+claude --plugin-dir ./sdlc-launcher
 ```
 
 ## Key Commands
 
+Commands are namespaced under `/sdlc-launcher:` when loaded as a plugin.
+
 | Phase | Commands |
 |-------|----------|
-| Planning | `/sdlc-idea`, `/sdlc-epic`, `/sdlc-roadmap` |
-| Requirements | `/sdlc-prd`, `/sdlc-stories`, `/sdlc-acceptance` |
-| Design | `/sdlc-design`, `/sdlc-arch` |
-| Development | `/sdlc-plan`, `/sdlc-implement`, `/sdlc-commit` |
-| Testing | `/sdlc-test`, `/sdlc-bug`, `/sdlc-qa` |
-| Deployment | `/sdlc-release`, `/sdlc-deploy` |
-| Maintenance | `/sdlc-retro`, `/sdlc-monitor`, `/sdlc-hotfix` |
-| Utils | `/sdlc-status`, `/sdlc-sync-jira`, `/sdlc-sprint` |
+| Planning | `/sdlc-launcher:sdlc-idea`, `/sdlc-launcher:sdlc-epic`, `/sdlc-launcher:sdlc-roadmap` |
+| Requirements | `/sdlc-launcher:sdlc-prd`, `/sdlc-launcher:sdlc-stories`, `/sdlc-launcher:sdlc-acceptance` |
+| Design | `/sdlc-launcher:sdlc-design`, `/sdlc-launcher:sdlc-arch` |
+| Development | `/sdlc-launcher:sdlc-plan`, `/sdlc-launcher:sdlc-implement`, `/sdlc-launcher:sdlc-commit` |
+| Testing | `/sdlc-launcher:sdlc-test`, `/sdlc-launcher:sdlc-bug`, `/sdlc-launcher:sdlc-qa` |
+| Deployment | `/sdlc-launcher:sdlc-release`, `/sdlc-launcher:sdlc-deploy` |
+| Maintenance | `/sdlc-launcher:sdlc-retro`, `/sdlc-launcher:sdlc-monitor`, `/sdlc-launcher:sdlc-hotfix` |
+| Utils | `/sdlc-launcher:sdlc-status`, `/sdlc-launcher:sdlc-sync-jira`, `/sdlc-launcher:sdlc-sprint` |
 
 ## Design Principles
 
@@ -41,7 +62,9 @@ This project is a Claude Code plugin that manages the complete Software Developm
 
 ## Setup
 
-Configure Jira credentials in `.claude/settings/jira-config.json` before running SDLC commands.
+1. Configure Jira credentials in `.claude/settings/jira-config.json`
+2. Load the plugin: `claude --plugin-dir ./sdlc-launcher`
+3. Run any command, e.g. `/sdlc-launcher:sdlc-idea "your idea here"`
 
 <!-- mulch:start -->
 ## Project Expertise (Mulch)

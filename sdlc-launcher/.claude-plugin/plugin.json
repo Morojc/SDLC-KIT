@@ -1,21 +1,14 @@
 {
-  "name": "SDLC-LAUNCHER",
+  "name": "sdlc-launcher",
+  "description": "AI-powered SDLC co-pilot: from raw idea to deployed product, with Jira integration at every step.",
   "version": "1.2.0",
-  "description": "A plugin that manage the SDLC (Software development life cycle) with JIRA integration",
   "author": {
     "name": "MORO HICHAM",
     "email": "hmoro.dev@outlook.com",
     "url": "https://github.com/Morojc"
   },
-  "homepage": "https://docs.example.com/plugin",
-  "repository": "https://github.com/Morojc/SDLC-LAUNCHER",
+  "homepage": "https://github.com/Morojc/SDLC-KIT",
+  "repository": "https://github.com/Morojc/SDLC-KIT",
   "license": "MIT",
-  "keywords": ["keyword1", "keyword2"],
-  "commands": ["./custom/commands/special.md"],
-  "agents": "./custom/agents/",
-  "skills": "./custom/skills/",
-  "hooks": "./config/hooks.json",
-  "mcpServers": "./mcp-config.json",
-  "outputStyles": "./styles/",
-  "lspServers": "./.lsp.json"
+  "keywords": ["sdlc", "jira", "planning", "agile", "ai", "claude-code"]
 }
