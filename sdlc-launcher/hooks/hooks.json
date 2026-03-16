@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== SDLC KIT Session Start ===' && mulch prime --context 2>/dev/null || true && sd prime 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== SDLC KIT Session Close: run mulch sync && sd sync before pushing ===' 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
