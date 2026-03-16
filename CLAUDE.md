@@ -71,6 +71,7 @@ sdlc-launcher/                  # Plugin root (load with --plugin-dir)
     ├── plans/                   # implementation plans (one per story)
     ├── test-reports/            # test plans and QA reports
     ├── releases/                # release notes documents
+    ├── reports/                 # generated XLSX sprint reports
     └── retros/                  # retrospective notes
 ```
 
