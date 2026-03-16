@@ -6,6 +6,10 @@
 
 This project is a Claude Code plugin that manages the complete Software Development Lifecycle (SDLC) using structured slash commands, AI-driven artifact generation, and deep Jira integration.
 
+**Two MCPs power all external operations:**
+- `jira` (mcp-atlassian) — Jira + Confluence
+- `github` (@modelcontextprotocol/server-github) — Git operations
+
 **Spec:** See `SPEC.MD` for the full architecture and command reference.
 
 ## Directory Structure
@@ -13,10 +17,14 @@ This project is a Claude Code plugin that manages the complete Software Developm
 The plugin lives in `sdlc-launcher/` and follows the official Claude Code plugin spec:
 
 ```
-sdlc-launcher/                  # Plugin root
+sdlc-launcher/                  # Plugin root (load with --plugin-dir)
 ├── .claude-plugin/
 │   └── plugin.json             # Plugin manifest (name, version, author…)
-├── skills/                     # Skills — each in its own folder with SKILL.md
+├── .mcp.json                   # jira + github MCP definitions
+├── hooks/
+│   └── hooks.json              # SessionStart: mulch prime + sd prime
+├── skills/                     # 25 skills — each in its own folder with SKILL.md
+│   ├── sdlc-kickoff/SKILL.md   # one-shot: idea → backlog → sprint → branches
 │   ├── sdlc-idea/SKILL.md
 │   ├── sdlc-epic/SKILL.md
 │   ├── sdlc-roadmap/SKILL.md
@@ -25,9 +33,11 @@ sdlc-launcher/                  # Plugin root
 │   ├── sdlc-acceptance/SKILL.md
 │   ├── sdlc-arch/SKILL.md
 │   ├── sdlc-design/SKILL.md
+│   ├── sdlc-sprint/SKILL.md
 │   ├── sdlc-plan/SKILL.md
 │   ├── sdlc-implement/SKILL.md
 │   ├── sdlc-commit/SKILL.md
+│   ├── sdlc-merge/SKILL.md     # guarded merge (story→sprint or sprint→main)
 │   ├── sdlc-test/SKILL.md
 │   ├── sdlc-bug/SKILL.md
 │   ├── sdlc-qa/SKILL.md
@@ -38,12 +48,30 @@ sdlc-launcher/                  # Plugin root
 │   ├── sdlc-retro/SKILL.md
 │   ├── sdlc-sprint/SKILL.md
 │   ├── sdlc-status/SKILL.md
-│   └── sdlc-sync-jira/SKILL.md
-└── agents/                     # Specialized AI agents (jira, architect, QA, etc.)
+│   ├── sdlc-sync-jira/SKILL.md
+│   └── sdlc-pull/SKILL.md      # pull Jira changes → local artifacts
+└── agents/                     # 6 specialized AI agents
+    ├── git-manager.md           # branch lifecycle, merge guards
+    ├── jira-connector.md        # Jira API operations
+    ├── tech-architect.md        # architecture decisions
+    ├── requirements-analyst.md  # PRD + story generation
+    ├── qa-engineer.md           # test plans + QA
+    └── release-manager.md       # release + deployment
 
 .claude/
-├── SDLCs/                      # Generated artifacts (ideas, PRDs, epics, plans…)
-└── settings/                   # Jira config and plugin settings
+├── settings/
+│   └── jira-config.json        # project key, board ID, field mappings
+└── SDLCs/                      # all generated artifacts
+    ├── briefs/                  # project brief documents
+    ├── ideas/                   # raw idea files
+    ├── epics/                   # epic + roadmap documents
+    ├── prds/                    # product requirements documents
+    ├── stories/                 # user story files (one per story)
+    ├── designs/                 # ADRs + technical design docs
+    ├── plans/                   # implementation plans (one per story)
+    ├── test-reports/            # test plans and QA reports
+    ├── releases/                # release notes documents
+    └── retros/                  # retrospective notes
 ```
 
 **Load the plugin locally:**
@@ -57,14 +85,15 @@ Commands are namespaced under `/sdlc-launcher:` when loaded as a plugin.
 
 | Phase | Commands |
 |-------|----------|
+| Kickoff (one-shot) | `/sdlc-launcher:sdlc-kickoff` |
 | Planning | `/sdlc-launcher:sdlc-idea`, `/sdlc-launcher:sdlc-epic`, `/sdlc-launcher:sdlc-roadmap` |
 | Requirements | `/sdlc-launcher:sdlc-prd`, `/sdlc-launcher:sdlc-stories`, `/sdlc-launcher:sdlc-acceptance` |
 | Design | `/sdlc-launcher:sdlc-design`, `/sdlc-launcher:sdlc-arch` |
-| Development | `/sdlc-launcher:sdlc-plan`, `/sdlc-launcher:sdlc-implement`, `/sdlc-launcher:sdlc-commit` |
+| Development | `/sdlc-launcher:sdlc-sprint`, `/sdlc-launcher:sdlc-plan`, `/sdlc-launcher:sdlc-implement`, `/sdlc-launcher:sdlc-commit`, `/sdlc-launcher:sdlc-merge` |
 | Testing | `/sdlc-launcher:sdlc-test`, `/sdlc-launcher:sdlc-bug`, `/sdlc-launcher:sdlc-qa` |
 | Deployment | `/sdlc-launcher:sdlc-release`, `/sdlc-launcher:sdlc-deploy` |
 | Maintenance | `/sdlc-launcher:sdlc-retro`, `/sdlc-launcher:sdlc-monitor`, `/sdlc-launcher:sdlc-hotfix` |
-| Utils | `/sdlc-launcher:sdlc-status`, `/sdlc-launcher:sdlc-sync-jira`, `/sdlc-launcher:sdlc-sprint` |
+| Utils | `/sdlc-launcher:sdlc-status`, `/sdlc-launcher:sdlc-sync-jira`, `/sdlc-launcher:sdlc-sprint`, `/sdlc-launcher:sdlc-pull` |
 
 ## Design Principles
 
@@ -76,9 +105,21 @@ Commands are namespaced under `/sdlc-launcher:` when loaded as a plugin.
 
 ## Setup
 
-1. Configure Jira credentials in `.claude/settings/jira-config.json`
-2. Load the plugin: `claude --plugin-dir ./sdlc-launcher`
-3. Run any command, e.g. `/sdlc-launcher:sdlc-idea "your idea here"`
+1. Set required environment variables:
+   ```bash
+   export JIRA_BASE_URL="https://yourcompany.atlassian.net"
+   export JIRA_EMAIL="you@yourcompany.com"
+   export JIRA_API_TOKEN="your-api-token"
+   export CONFLUENCE_URL="https://yourcompany.atlassian.net/wiki"
+   export GITHUB_TOKEN="your-github-pat"
+   ```
+2. Configure project settings in `.claude/settings/jira-config.json` (project key, board ID, field mappings)
+3. Load the plugin: `claude --plugin-dir ./sdlc-launcher`
+4. Go from idea to full backlog in one command:
+   ```bash
+   /sdlc-launcher:sdlc-kickoff "your product idea"
+   ```
+   Or run individual phase commands, e.g. `/sdlc-launcher:sdlc-idea "your idea here"`
 
 <!-- mulch:start -->
 ## Project Expertise (Mulch)
