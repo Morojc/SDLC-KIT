@@ -1,0 +1,29 @@
+{
+  "jira_base_url": "https://hmorodev.atlassian.net",
+  "project_key": "MA",
+  "auth_type": "api_token",
+  "api_token_env": "JIRA_API_TOKEN",
+  "email_env": "JIRA_EMAIL",
+  "default_board_id": null,
+  "default_sprint_id": null,
+  "issue_types": {
+    "initiative": "Initiative",
+    "epic": "Epic",
+    "story": "Story",
+    "task": "Task",
+    "sub_task": "Sub-task",
+    "bug": "Bug"
+  },
+  "custom_fields": {
+    "story_points": "story_points",
+    "epic_link": "epic_link",
+    "sprint": "sprint",
+    "acceptance_criteria": "customfield_10016"
+  },
+  "workflow_transitions": {
+    "to_do": "To Do",
+    "in_progress": "In Progress",
+    "in_review": "In Review",
+    "done": "Done"
+  }
+}
