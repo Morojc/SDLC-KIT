@@ -16,15 +16,29 @@ The plugin lives in `sdlc-launcher/` and follows the official Claude Code plugin
 sdlc-launcher/                  # Plugin root
 ├── .claude-plugin/
 │   └── plugin.json             # Plugin manifest (name, version, author…)
-├── commands/                   # Slash commands — namespaced as /sdlc-launcher:*
-│   ├── phase-1-planning/
-│   ├── phase-2-requirements/
-│   ├── phase-3-design/
-│   ├── phase-4-development/
-│   ├── phase-5-testing/
-│   ├── phase-6-deployment/
-│   ├── phase-7-maintenance/
-│   └── utils/
+├── skills/                     # Skills — each in its own folder with SKILL.md
+│   ├── sdlc-idea/SKILL.md
+│   ├── sdlc-epic/SKILL.md
+│   ├── sdlc-roadmap/SKILL.md
+│   ├── sdlc-prd/SKILL.md
+│   ├── sdlc-stories/SKILL.md
+│   ├── sdlc-acceptance/SKILL.md
+│   ├── sdlc-arch/SKILL.md
+│   ├── sdlc-design/SKILL.md
+│   ├── sdlc-plan/SKILL.md
+│   ├── sdlc-implement/SKILL.md
+│   ├── sdlc-commit/SKILL.md
+│   ├── sdlc-test/SKILL.md
+│   ├── sdlc-bug/SKILL.md
+│   ├── sdlc-qa/SKILL.md
+│   ├── sdlc-release/SKILL.md
+│   ├── sdlc-deploy/SKILL.md
+│   ├── sdlc-hotfix/SKILL.md
+│   ├── sdlc-monitor/SKILL.md
+│   ├── sdlc-retro/SKILL.md
+│   ├── sdlc-sprint/SKILL.md
+│   ├── sdlc-status/SKILL.md
+│   └── sdlc-sync-jira/SKILL.md
 └── agents/                     # Specialized AI agents (jira, architect, QA, etc.)
 
 .claude/

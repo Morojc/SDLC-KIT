@@ -1,0 +1,173 @@
+---
+name: sdlc-implement
+description: "SDLC Phase 4: Execute an implementation plan phase by phase"
+---
+
+# sdlc-implement — SDLC Phase 4: Development
+
+## MCP Tools
+Prefer MCP tools over raw curl for all external operations:
+- **Jira** (`jira` MCP): use `jira_create_issue`, `jira_update_issue`, `jira_add_comment`, `jira_transition_issue`, `jira_get_issue`, `jira_search_issues` — no curl to Jira API
+- **GitHub** (`github` MCP): use `create_pull_request`, `create_branch`, `push_files`, `get_file_contents`, `search_code` — no curl to GitHub API
+
+## Overstory — Parallel Phase Execution
+For implementation plans with **3+ independent phases**, use Overstory to run them in parallel:
+
+```bash
+# Identify which phases have no inter-dependencies (Parallel? = Yes in plan file)
+# Spawn one Overstory agent per parallel phase group
+
+overstory spawn \
+  --branch "overstory/impl-{storyKey}-phase{N}" \
+  --task "Implement Phase {N}: {title}. Files: {file_targets}. Validation: {command}" \
+  --worktree
+```
+
+**Rules:**
+- Sequential phases (depends on prior): run in main agent, in order
+- Parallel phases: spawn Overstory agents simultaneously, merge when all pass validation
+- Each Overstory agent must: implement → validate → log to Jira sub-task → exit
+- Main agent waits for all parallel agents before running the next sequential phase
+- If any parallel agent fails: stop all, fix in main agent, re-run
+
+
+## Mulch & Seeds
+
+### Session Start
+```bash
+mulch prime --context   # load project-specific expertise relevant to changed files
+sd prime                # load issue tracking context and rules
+```
+
+### During Work
+```bash
+mulch search "<topic>"  # check prior decisions before implementing
+sd update <id> --status in_progress  # claim your Seeds issue before writing code
+```
+
+### Session Close (run before saying "done")
+```bash
+mulch learn                          # review changed files for recordable insights
+mulch record <domain> --type <type> --description "..."  # record conventions/decisions
+mulch sync                           # validate and commit .mulch/ changes
+sd close <id>                        # close completed Seeds issues
+sd sync                              # sync Seeds with git
+```
+
+
+## Context Loading
+Read and internalize:
+- `.claude/settings/jira-config.json` — Jira project settings
+- `.claude/SDLCs/plans/` — implementation plans
+- `.claude/SDLCs/designs/` — design documents for architectural context
+- `CLAUDE.md` (if exists) — project conventions, coding standards, patterns
+
+## Input
+$ARGUMENTS — A plan file path (e.g. `plan-PROJ-010.md`) or a Jira story key (e.g. `PROJ-010`)
+
+## Task
+Execute the implementation plan phase by phase, writing code to the specified file targets, validating after each phase, and logging progress on the Jira sub-tasks.
+
+### Step 1: Load the Plan
+If the argument is a file path, read `.claude/SDLCs/plans/{argument}`.
+If the argument is a Jira key, read `.claude/SDLCs/plans/plan-{storyKey}.md`.
+
+Parse out:
+- All implementation phases (title, files, dependencies, parallel flag, estimates)
+- Validation commands per phase
+- Jira story key and sub-task keys
+
+### Step 2: Pre-flight Checks
+Before writing any code:
+1. Read every file listed in **File Targets** that already exists (to understand existing patterns)
+2. Read relevant test files to understand the testing framework and conventions
+3. Confirm the validation commands work on the current codebase (run them once as a baseline)
+4. Note the current git status (`git status`) — implementation should only touch plan-scoped files
+
+### Step 3: Execute Phases Sequentially
+For each implementation phase (respecting the dependency order in the plan):
+
+**3a. Implement the phase:**
+- Write or modify the files listed for this phase
+- Follow existing code conventions (indentation, import order, naming, error handling)
+- Write clean, minimal code — no gold-plating, no premature abstraction
+- Add tests alongside implementation code
+
+**3b. Validate the phase:**
+Run the validation command(s) specified for this phase. If they fail:
+- Diagnose the failure
+- Fix the implementation
+- Re-run validation until it passes
+Do not proceed to the next phase until the current phase passes its validation gate.
+
+**3c. Log time on the Jira sub-task:**
+```
+POST $JIRA_BASE_URL/rest/api/3/issue/{subTaskKey}/worklog
+Authorization: Basic base64($JIRA_EMAIL:$JIRA_API_TOKEN)
+{
+  "timeSpentSeconds": {estimated_seconds},
+  "comment": {
+    "type": "doc", "version": 1,
+    "content": [{ "type": "paragraph", "content": [
+      { "type": "text", "text": "Phase complete: {phase title}. Validation passed." }
+    ]}]
+  }
+}
+```
+
+**3d. Transition the sub-task to Done:**
+```
+POST $JIRA_BASE_URL/rest/api/3/issue/{subTaskKey}/transitions
+{ "transition": { "id": "{done_transition_id}" } }
+```
+
+### Step 4: Run Full Validation Suite
+After all phases are complete, run the complete validation suite:
+```bash
+bun test           # All tests must pass
+bun run lint       # Zero lint errors
+bun run typecheck  # No TypeScript errors
+bun run build      # Build succeeds (if applicable)
+```
+
+If any check fails, fix the issue before proceeding.
+
+### Step 5: Update the Plan File
+Update `.claude/SDLCs/plans/plan-{storyKey}.md` — change each phase's `Status` column from `pending` to `done`.
+
+### Step 6: Jira Sync
+**6a. Add an implementation summary comment to the story:**
+```
+POST $JIRA_BASE_URL/rest/api/3/issue/{storyKey}/comment
+{
+  "body": {
+    "type": "doc", "version": 1,
+    "content": [{ "type": "paragraph", "content": [
+      { "type": "text", "text": "Implementation complete. {N} phases executed, all tests passing. Ready for commit and code review." }
+    ]}]
+  }
+}
+```
+
+**6b. (Optional) Attach a brief summary of changed files as a comment:**
+List files created/modified and the tests that cover them.
+
+## Output
+1. **Code changes:** All files listed in the plan's File Targets, created/modified
+2. **Updated plan:** `.claude/SDLCs/plans/plan-{storyKey}.md` with all phases marked done
+3. **Jira actions:**
+   - Time logged on each sub-task
+   - All sub-tasks transitioned to Done
+   - Implementation summary comment on the story
+4. **Summary:** Print full validation results (test count, coverage, lint status)
+
+## Validation
+- [ ] All implementation phases complete (no `pending` phases remain in plan file)
+- [ ] `bun test` passes (or equivalent)
+- [ ] `bun run lint` passes with zero errors
+- [ ] `bun run typecheck` passes with no errors
+- [ ] All Jira sub-tasks are Done
+- [ ] Implementation comment added to story
+
+## Next Step
+After completion, suggest: `/sdlc-commit {storyKey}`
